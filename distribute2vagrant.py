@@ -19,7 +19,7 @@ def deploy(hosts):
 			cmd = '%s apt-get -y install python3-pip' % (pipe_sudo)
 			os.system('%s ssh %s "%s" "%s"' % (default_locale, no_keycheck, host, cmd))
 
-			cmd = 'pip3 --upgrade'
+			cmd = 'pip3 install --upgrade pip'
 			os.system('%s ssh %s "%s" "%s"' % (default_locale, no_keycheck, host, cmd))
 
 			cmd = 'pip install mxnet pandas'
