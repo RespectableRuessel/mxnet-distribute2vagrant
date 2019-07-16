@@ -9,13 +9,15 @@ def install():
 		os.system('git clone --recursive https://github.com/apache/incubator-mxnet')
 
 def deploy(hosts):
+	no_keycheck = '-o "StrictHostKeyChecking no"'
+
 	with open(hosts) as f:
 		for host in f:
 			cmd = 'echo "vagrant" | sudo -S apt-get -y install python3-pip'
-			os.system('ssh "%s" "%s"' % (host, cmd))
+			os.system('ssh %s "%s" "%s"' % (no_keycheck, host, cmd))
 
 			cmd = 'pip3 install mxnet pandas'
-			os.system('ssh "%s" "%s"' % (host, cmd))
+			os.system('ssh %s "%s" "%s"' % (no_keycheck, host, cmd))
 
 def launch(hosts, job, nodes):
 	if not os.path.isfile('incubator-mxnet/tools/launch.py'):
@@ -123,6 +125,9 @@ args, unknown = parser.parse_known_args()
 
 if args.install:
 	install()
+
+if not args.host:
+	exit(1)
 
 hosts = args.hosts
 
