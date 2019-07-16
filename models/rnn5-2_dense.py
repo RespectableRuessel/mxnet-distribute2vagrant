@@ -42,7 +42,7 @@ kv = mx.kvstore.create('dist_sync')
 # load dataframe
 lines = sum(1 for line in open(args.dataset))
 df_len = lines // kv.num_workers
-df_skip = (data_len * kv.rank) - 1
+df_skip = (df_len * kv.rank) - 1
 df = pd.read_csv(args.dataset, header = None, skiprows=df_skip, nrows = df_len)
 
 # extract targets
