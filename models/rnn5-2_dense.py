@@ -25,7 +25,7 @@ parser.add_argument('-t', '--test-split', required=True, type=float)
 
 args, unknown = parser.parse_known_args()
 
-name = sys.args[0].replace('.py', '')
+name = sys.argv[0].replace('.py', '')
 dir = os.path.dirname(args.dataset)
 
 print('%s %s' % (name, dir))
