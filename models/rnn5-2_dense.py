@@ -98,8 +98,8 @@ train_metrics.add(train_metric_accuracy)
 train_metric_f1 = mx.metric.F1()
 train_metrics.add(train_metric_f1)
 
-train_metric_perplexity = mx.metric.Perplexity(ignore_label=None)
-train_metrics.add(train_metric_perplexity)
+#train_metric_perplexity = mx.metric.Perplexity(ignore_label=None)
+#train_metrics.add(train_metric_perplexity)
 
 test_metrics = mx.metric.CompositeEvalMetric()
 
@@ -109,8 +109,8 @@ test_metrics.add(test_metric_accuracy)
 test_metric_f1 = mx.metric.F1()
 test_metrics.add(test_metric_f1)
 
-test_metricc_perplexity = mx.metric.Perplexity(ignore_label=None)
-test_metrics.add(test_metricc_perplexity)
+#test_metricc_perplexity = mx.metric.Perplexity(ignore_label=None)
+#test_metrics.add(test_metricc_perplexity)
 
 # training
 l_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss(sparse_label=False)
