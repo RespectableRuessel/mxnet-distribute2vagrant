@@ -98,6 +98,7 @@ def execute(hosts, cmds, sudo):
 
 	with open(hosts) as f:
 		for host in f:
+			print('%s ...' % host)
 			os.system('%s ssh %s "%s" "%s"' % (default_locale, no_keycheck, host, cmds))
 
 def ansible2hostfile(hosts):
