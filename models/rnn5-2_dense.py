@@ -26,7 +26,7 @@ parser.add_argument('-t', '--test-split', required=True, type=float)
 args, unknown = parser.parse_known_args()
 
 name = os.path.basename(__file__).replace('.py', '')
-dir = os.path.dirname(os.path.realpath(__file__))
+dir = os.path.dirname(args.dataset)
 
 # hyper parameters
 epochs = args.epochs
