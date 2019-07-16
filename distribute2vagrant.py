@@ -126,7 +126,7 @@ args, unknown = parser.parse_known_args()
 if args.install:
 	install()
 
-if not args.host:
+if not args.hosts:
 	exit(1)
 
 hosts = args.hosts
