@@ -22,7 +22,10 @@ def deploy(hosts):
 			cmd = 'pip3 install --upgrade pip'
 			os.system('%s ssh %s "%s" "%s"' % (default_locale, no_keycheck, host, cmd))
 
-			cmd = 'pip3 install mxnet pandas'
+			cmd = 'pip uninstall numpy'
+			os.system('%s ssh %s "%s" "%s"' % (default_locale, no_keycheck, host, cmd))
+
+			cmd = 'pip install numpy mxnet pandas'
 			os.system('%s ssh %s "%s" "%s"' % (default_locale, no_keycheck, host, cmd))
 
 def launch(hosts, job, nodes):
@@ -85,6 +88,14 @@ def pick(hosts, count):
 
 	return hosts
 
+def execute(hosts, cmds):
+	no_keycheck = '-o "StrictHostKeyChecking no"'
+	default_locale = 'export LC_ALL=C;'
+
+	with open(hosts) as f:
+		for host in f:
+			os.system('%s ssh %s "%s" "%s"' % (default_locale, no_keycheck, host, cmds))
+
 def ansible2hostfile(hosts):
 	file = '%s%s' % (hosts, '_out')
 	open(file, 'w').close()
@@ -138,6 +149,8 @@ parser.add_argument('-a', '--ansible', action='store_true',
 parser.add_argument('-d', '--deploy', action='store_true',
 					help='prepares a worker node with necessary software \
 					and modules')
+parser.add_argument('-e', '--execute', type=str,
+					help='executes the string via ssh on all nodes.')
 parser.add_argument('-l', '--launch', type=str,
 					help='the job that gets executed via the mxnet \
 					tools/launch.py script')
@@ -175,6 +188,9 @@ if args.deploy and args.hosts is None:
 
 if args.deploy:
 	deploy(hosts)
+
+if args.execute:
+	execute(hosts, args.execute)
 
 if args.launch and args.launch_nodes is None:
 	parser.error('--launch requires --launch-nodes.')
