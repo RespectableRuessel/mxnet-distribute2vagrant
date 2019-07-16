@@ -10,18 +10,16 @@ def install():
 
 def deploy(hosts):
 	no_keycheck = '-o "StrictHostKeyChecking no"'
+	default_locale = 'export LC_ALL=C;'
 	pipe_sudo = 'echo "vagrant" | sudo -S'
 
 	with open(hosts) as f:
 		for host in f:
-			cmd = 'export LC_ALL=C'
-			os.system('ssh %s "%s" "%s"' % (no_keycheck, host, cmd))
-
 			cmd = '%s apt-get -y install python3-pip' % (pipe_sudo)
-			os.system('ssh %s "%s" "%s"' % (no_keycheck, host, cmd))
+			os.system('%s ssh %s "%s" "%s"' % (default_locale, no_keycheck, host, cmd))
 
 			cmd = 'pip3 install mxnet pandas'
-			os.system('ssh %s "%s" "%s"' % (no_keycheck, host, cmd))
+			os.system('%s ssh %s "%s" "%s"' % (default_locale, no_keycheck, host, cmd))
 
 def launch(hosts, job, nodes):
 	if not os.path.isfile('incubator-mxnet/tools/launch.py'):
