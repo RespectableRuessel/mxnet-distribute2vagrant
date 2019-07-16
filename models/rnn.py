@@ -165,7 +165,7 @@ df_skip = 0
 
 if not kv is None:
 	df_len = lines // kv.num_workers
-	df_skip = (df_len * kv_rank) - 1
+	df_skip = (df_len * kv.rank) - 1
 
 df_time = time.time()
 
