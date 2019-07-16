@@ -39,11 +39,11 @@ def launch(hosts, job, nodes):
 
 	with open(job) as f:
 		desc = json.load(f)
-		launch_cmd = '%s %s %s' % (launch_cmd,
+		launch_cmd = '%s %s %s %s %s %s' % (launch_cmd,
 			desc['script'], desc['dataset'], desc['epochs'],
 			desc['batch-size'], desc['sequence-length'])
 
-	print('python3 incubator-mxnet/tools/launch.py %s %s' % (launch_args, launch_cmd))
+	#print('python3 incubator-mxnet/tools/launch.py %s %s' % (launch_args, launch_cmd))
 	os.system('python3 incubator-mxnet/tools/launch.py %s %s' % (launch_args, launch_cmd))
 
 def pick(hosts, count):
