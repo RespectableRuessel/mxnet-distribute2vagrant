@@ -22,7 +22,7 @@ def deploy(hosts):
 			cmd = 'pip3 install --upgrade pip'
 			os.system('%s ssh %s "%s" "%s"' % (default_locale, no_keycheck, host, cmd))
 
-			cmd = 'pip install mxnet pandas'
+			cmd = 'pip3 install mxnet pandas'
 			os.system('%s ssh %s "%s" "%s"' % (default_locale, no_keycheck, host, cmd))
 
 def launch(hosts, job, nodes):
