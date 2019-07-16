@@ -17,9 +17,6 @@ def deploy(hosts):
 			cmd = 'export LC_ALL=C'
 			os.system('ssh %s "%s" "%s"' % (no_keycheck, host, cmd))
 
-			cmd = '%s dpkg-reconfigure locales' % (pipe_sudo)
-			os.system('ssh %s "%s" "%s"' % (no_keycheck, host, cmd))
-
 			cmd = '%s apt-get -y install python3-pip' % (pipe_sudo)
 			os.system('ssh %s "%s" "%s"' % (no_keycheck, host, cmd))
 
