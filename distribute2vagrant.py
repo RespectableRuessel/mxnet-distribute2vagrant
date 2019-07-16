@@ -2,6 +2,7 @@ import os, sys
 import argparse
 import re
 import json
+import random
 
 def install():
 	if not os.path.isdir('incubator-mxnet'):
@@ -42,8 +43,22 @@ def launch(hosts, job, nodes):
 			desc['script'], desc['dataset'], desc['epochs'],
 			desc['batch-size'], desc['sequence-length'])
 
-	#print('python3 incubator-mxnet/tools/launch.py %s %s' % (launch_args, launch_cmd))
+	print('python3 incubator-mxnet/tools/launch.py %s %s' % (launch_args, launch_cmd))
 	os.system('python3 incubator-mxnet/tools/launch.py %s %s' % (launch_args, launch_cmd))
+
+def pick(hosts, count):
+	all = []
+
+	with open(hosts) as f:
+		all = f.readlines()
+		random.shuffle(all)
+		all = all[0:count]
+
+	with open(hosts, 'w') as f:
+		for h in all:
+			f.write('%s' % (h))
+
+	return hosts
 
 def ansible2hostfile(hosts):
 	file = '%s%s' % (hosts, '_out')
@@ -90,6 +105,8 @@ parser.add_argument('-i', '--install', action='store_true',
 					help='installs all master machine requirements')
 parser.add_argument('-H', '--hosts', type=str,
 					help='the hostfile of slave machines')
+parser.add_argument('-p', '--pick', type=int,
+					help='picks randomly a certain number of hosts.')
 parser.add_argument('-a', '--ansible', action='store_true',
 					help='converts an ansible to a plain host file containing \
 					only worker nodes')
@@ -99,7 +116,7 @@ parser.add_argument('-d', '--deploy', action='store_true',
 parser.add_argument('-l', '--launch', type=str,
 					help='the job that gets executed via the mxnet \
 					tools/launch.py script')
-parser.add_argument('-p', '--launch-nodes', nargs='+', type=int,
+parser.add_argument('-n', '--launch-nodes', nargs='+', type=int,
 					help='number of worker and (optional) server nodes to be launched.')
 
 args, unknown = parser.parse_known_args()
@@ -118,6 +135,12 @@ if args.ansible and args.hosts is None:
 
 if args.ansible:
 	hosts = ansible2hostfile(hosts)
+
+if args.pick and args.hosts is None:
+	parser.error('--pick requires --hosts.')
+
+if args.pick:
+	hosts = pick(hosts, args.pick)
 
 if args.deploy and args.hosts is None:
 	parser.error('--deploy requires --hosts.')
