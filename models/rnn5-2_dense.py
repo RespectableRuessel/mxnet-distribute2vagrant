@@ -139,7 +139,7 @@ for epoch in range(epochs):
 	toc = time.time() - tic
 
 	if use_kv:
-		print('[%s:%s] training completed in %ss with a accuracy of %s.' % (kv.rank, epoch, toc, train_metric.get()[1]))
+		print('[%s:%s] training completed in %ss with a accuracy of %s.' % (kv.rank, epoch, toc, train_metric_accuracy.get()[1]))
 	else:
 		print('[%s] training completed in %ss with a accuracy of %s.' % (epoch, toc, train_metric_accuracy.get()[1]))
 
@@ -157,7 +157,7 @@ for epoch in range(epochs):
 	toc = time.time() - tic
 
 	if use_kv:
-		print('[%s:%s] testing completed in %ss with a accuracy of %s.' % (kv.rank, epoch, toc, test_metric.get()[1]))
+		print('[%s:%s] testing completed in %ss with a accuracy of %s.' % (kv.rank, epoch, toc, test_metric_accuracy.get()[1]))
 	else:
 		print('[%s] testing completed in %ss with a accuracy of %s.' % (epoch, toc, test_metric_accuracy.get()[1]))
 
