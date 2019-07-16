@@ -3,6 +3,7 @@ import argparse
 import re
 import json
 import random
+import time
 
 def install():
 	if not os.path.isdir('incubator-mxnet'):
@@ -41,14 +42,31 @@ def launch(hosts, job, nodes):
 	else:
 		launch_args = '%s -n %s' % (launch_args, nodes[0])
 
-	with open(job) as f:
-		desc = json.load(f)
-		launch_cmd = '%s %s %s %s %s %s' % (launch_cmd,
-			desc['script'], desc['dataset'], desc['epochs'],
-			desc['batch-size'], desc['sequence-length'])
+	def make_argument(info, desc):
+		return '--%s %s' % (info, desc[info])
+
+	def parse_job(job):
+		line = ''
+
+		with open(job) as f:
+			desc = json.load(f)
+			line = '%s' % (desc.pop('script'))
+			for key in desc:
+				line = '%s %s' % (line, make_argument(key, desc))
+
+		return line
+
+	launch_cmd = '%s %s' % (launch_cmd, parse_job(job))
 
 	#print('python3 incubator-mxnet/tools/launch.py %s %s' % (launch_args, launch_cmd))
+
+	tic = time.time()
+
 	os.system('python3 incubator-mxnet/tools/launch.py %s %s' % (launch_args, launch_cmd))
+
+	toc = time.time() - tic
+
+	print('distributed training completed in %ss.' % (toc))
 
 def pick(hosts, count):
 	all = []

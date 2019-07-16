@@ -12,15 +12,17 @@ parser.add_argument('-d', '--dataset', required=True, type=str)
 parser.add_argument('-e', '--epochs', type=int)
 parser.add_argument('-b', '--batch-size', type=int)
 parser.add_argument('-s', '--sequence-length', type=int)
+parser.add_argument('-t', '--test-split', type=float)
 
 args, unknown = parser.parse_known_args()
 
 layout = {
 	'script': args.script,
 	'dataset': args.dataset,
-	'epochs': 0,
-	'batch-size': 0,
-	'sequence-length': 0
+	'epochs': 10,
+	'batch-size': 32,
+	'sequence-length': 10,
+	'test-split': 0.3
 }
 
 if args.copy:
@@ -43,6 +45,9 @@ if args.batch_size:
 
 if args.sequence_length:
 	layout['sequence-length'] = args.sequence_length
+
+if args.test_split:
+	layout['test-split'] = args.sequence_length
 
 job = args.name
 
