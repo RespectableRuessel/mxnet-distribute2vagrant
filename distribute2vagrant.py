@@ -10,10 +10,20 @@ def install():
 
 def deploy(hosts):
 	no_keycheck = '-o "StrictHostKeyChecking no"'
+	pipe_sudo = 'echo "vagrant" | sudo -S'
 
 	with open(hosts) as f:
 		for host in f:
-			cmd = 'echo "vagrant" | sudo -S apt-get -y install python3-pip'
+			cmd = 'export LC_ALL="en_US.UTF-8"'
+			os.system('ssh %s "%s" "%s"' % (no_keycheck, host, cmd))
+
+			cmd = 'export LC_CTYPE="en_US.UTF-8"'
+			os.system('ssh %s "%s" "%s"' % (no_keycheck, host, cmd))
+
+			cmd = '%s dpkg-reconfigure locales' % (pipe_sudo)
+			os.system('ssh %s "%s" "%s"' % (no_keycheck, host, cmd))
+
+			cmd = '%s apt-get -y install python3-pip' % (pipe_sudo)
 			os.system('ssh %s "%s" "%s"' % (no_keycheck, host, cmd))
 
 			cmd = 'pip3 install mxnet pandas'
