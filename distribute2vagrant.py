@@ -88,9 +88,13 @@ def pick(hosts, count):
 
 	return hosts
 
-def execute(hosts, cmds):
+def execute(hosts, cmds, sudo):
 	no_keycheck = '-o "StrictHostKeyChecking no"'
 	default_locale = 'export LC_ALL=C;'
+	pipe_sudo = 'echo "vagrant" | sudo -S'
+
+	if sudo:
+		cmds = '%s %s' % (pipe_sudo, cmds)
 
 	with open(hosts) as f:
 		for host in f:
@@ -151,6 +155,8 @@ parser.add_argument('-d', '--deploy', action='store_true',
 					and modules')
 parser.add_argument('-e', '--execute', type=str,
 					help='executes the string via ssh on all nodes.')
+parser.add_argument('-s', '--sudo', action='store_true',
+					help='executes the string via ssh on all nodes with sudo rights.')
 parser.add_argument('-l', '--launch', type=str,
 					help='the job that gets executed via the mxnet \
 					tools/launch.py script')
@@ -190,7 +196,7 @@ if args.deploy:
 	deploy(hosts)
 
 if args.execute:
-	execute(hosts, args.execute)
+	execute(hosts, args.execute, args.sudo)
 
 if args.launch and args.launch_nodes is None:
 	parser.error('--launch requires --launch-nodes.')
