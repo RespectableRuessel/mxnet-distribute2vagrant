@@ -28,6 +28,8 @@ args, unknown = parser.parse_known_args()
 name = sys.args[0].replace('.py', '')
 dir = os.path.dirname(args.dataset)
 
+print('%s %s' % (name, dir))
+
 # hyper parameters
 epochs = args.epochs
 batch_size = args.batch_size
@@ -115,8 +117,6 @@ l_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss(sparse_label=False)
 trainer = gluon.Trainer(net.collect_params(), 'adam', kvstore=kv, update_on_kvstore=True)
 
 for epoch in range(epochs):
-	#print('------- epoch %s -------' % (epoch))
-
 	tic = time.time()
 
 	for i, (x, y) in enumerate(train_dataloader):
@@ -134,7 +134,7 @@ for epoch in range(epochs):
 
 	toc = time.time() - tic
 
-	#print('training completed in %ss with a accuracy of %s.' % (toc, train_metric.get()[1]))
+	print('[%s:%s] training completed in %ss with a accuracy of %s.' % (kv.rank, epoch, toc, train_metric.get()[1]))
 
 	for i, (x, y) in enumerate(test_dataloader):
 		# move to GPU if needed
@@ -146,7 +146,7 @@ for epoch in range(epochs):
 
 	toc = time.time() - tic
 
-	#print('testing completed in %ss with a accuracy of %s.' % (toc, test_metric.get()[1]))
+	print('[%s:%s] testing completed in %ss with a accuracy of %s.' % (kv.rank, epoch, toc, test_metric.get()[1]))
 
 	tic = time.time()
 
