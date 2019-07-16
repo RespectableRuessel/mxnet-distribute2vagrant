@@ -28,8 +28,6 @@ args, unknown = parser.parse_known_args()
 name = os.path.basename(sys.argv[0]).replace('.py', '')
 dir = os.path.dirname(args.dataset)
 
-print('%s %s' % (name, dir))
-
 # hyper parameters
 epochs = args.epochs
 batch_size = args.batch_size
@@ -37,7 +35,7 @@ sequence_length = args.sequence_length
 test_size = args.test_split
 
 # kvstore
-use_kv = False
+use_kv = True
 kv = None
 
 if use_kv:
