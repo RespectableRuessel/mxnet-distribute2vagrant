@@ -14,10 +14,10 @@ def deploy(hosts):
 
 	with open(hosts) as f:
 		for host in f:
-			cmd = 'export LC_ALL=\"en_US.UTF-8\"'
+			cmd = 'export LC_ALL=\\\"en_US.UTF-8\\\"'
 			os.system('ssh %s "%s" "%s"' % (no_keycheck, host, cmd))
 
-			cmd = 'export LC_CTYPE=\"en_US.UTF-8\"'
+			cmd = 'export LC_CTYPE=\\\"en_US.UTF-8\\\"'
 			os.system('ssh %s "%s" "%s"' % (no_keycheck, host, cmd))
 
 			cmd = '%s dpkg-reconfigure locales' % (pipe_sudo)
