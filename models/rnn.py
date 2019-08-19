@@ -6,6 +6,7 @@ import logging
 import numpy as np
 import pandas as pd
 import mxnet as mx
+from mxnet import ndarray as nd
 from mxnet import gluon
 from mxnet.gluon.data import DataLoader, ArrayDataset
 
@@ -18,8 +19,10 @@ parser.add_argument('-b', '--batch-size', type=int, default=32)
 parser.add_argument('-s', '--sequence-length', type=int, default=12)
 parser.add_argument('-l', '--learning-rate', type=float, default=0.1)
 parser.add_argument('-m', '--momentum', type=float, default=0.9)
+parser.add_argument('-u', '--rnn-units', type=int, default=5)
 parser.add_argument('-t', '--test-split', type=float, default=0.3)
 parser.add_argument('-k', '--kvstore', type=str)
+parser.add_argument('-S', '--statistics', action='store_true')
 
 args, unknown = parser.parse_known_args()
 
@@ -62,6 +65,25 @@ def save_checkpoint(net, epoch, accuracy):
 	net.save_parameters(fname)
 	logger.info('epoch %d\t\tsaving checkpoint with accuracy %.4f' % (epoch, accuracy))
 
+# --- measurements
+def track_statistics(statistics, epoch, batch, loss, metrics):
+	metric, val = metrics.get()
+	statistics.append([epoch, batch, nd.mean(loss).asscalar(), val[0], val[1], val[2]])
+
+def save_statistics(statistics):
+	fname = os.path.join(dir, '%s_metrics.csv' % (name))
+
+	if not os.path.isfile(fname):
+		with open(fname, 'w') as f:
+			f.write('epoch,batch,loss,accuracy,f1,perplexity\n')
+
+	with open(fname, 'a') as f:
+		for stat in statistics:
+			f.write('%s,%s,%s,%s,%s,%s\n' %
+				(stat[0], stat[1], stat[2], stat[3], stat[4], stat[5]))
+
+	statistics.clear()
+
 # --- test
 def test(ctx, test_data, metrics):
 	metrics.reset()
@@ -77,7 +99,7 @@ def test(ctx, test_data, metrics):
 	return metrics.get()
 
 # --- train
-def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning_rate, momentum, kv=None):
+def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning_rate, momentum, kv=None, track_stats=False):
 	trainer = gluon.Trainer(net.collect_params(), 'sgd',
 		optimizer_params={
 			'learning_rate': learning_rate,
@@ -89,7 +111,9 @@ def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning
 
 	loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
+	statistics = []
 	total_time = 0
+	start_time = time.time()
 	num_epochs = 0
 	best_acc = 0
 
@@ -114,6 +138,10 @@ def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning
 				metric, val = metrics.get()
 				logger.info('epoch %d batch %d\tspeed=%8.f samples/sec\t%s=%f, %s=%f' %
 					(epoch, i, batch_size/(time.time() + 0.000001 - btic), metric[0], val[0], metric[1], val[1]))
+
+			if track_stats and i > 0:
+				track_statistics(statistics, epoch, i, L, metrics)
+
 			btic = time.time()
 
 		toc = time.time() - tic
@@ -121,6 +149,9 @@ def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning
 		if num_epochs > 0:
 			total_time = total_time + toc
 		num_epochs = num_epochs + 1
+
+		if track_stats:
+			save_statistics(statistics)
 
 		metric, val = metrics.get()
 		logger.info('epoch %d\t\ttraining: %s=%f, %s=%f, %s=%f' %
@@ -138,7 +169,7 @@ def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning
 	if num_epochs > 1:
 		logger.info('average epoch time: %fs' % (total_time / float(num_epochs - 1)))
 
-	logger.info('training completed')
+	logger.info('training completed in %.3fs with a update time of %.3fs' % (time.time() - start_time, total_time))
 
 # --- model
 logger.info('starting new classification task:, %s', args)
@@ -147,7 +178,7 @@ ctx = mx.cpu()
 
 net = gluon.nn.Sequential()
 with net.name_scope():
-	net.add(gluon.rnn.RNN(5, 1, layout='NTC'))
+	net.add(gluon.rnn.RNN(args.rnn_units, 1, layout='NTC'))
 	net.add(gluon.nn.Dense(2))
 
 net.initialize(mx.init.Xavier(), ctx=ctx)
@@ -200,4 +231,4 @@ logger.info('datasets: train=%d samples, validation=%d samples' % (len(train_dat
 # --- run
 metrics, acc, f1, perp = get_metrics()
 train(ctx, net, train_dataloader, test_dataloader, metrics,
-	args.epochs, args.batch_size, args.learning_rate, args.momentum, kv)
+	args.epochs, args.batch_size, args.learning_rate, args.momentum, kv, args.statistics and kv.rank == 0)
