@@ -202,7 +202,7 @@ df_time = time.time()
 
 logger.info('reading %s of %s lines of data' % (df_len, lines))
 
-df = pd.read_csv(args.dataset, header=None, skiprows=df_skip, nrows=df_len)
+df = pd.read_csv(args.dataset, header=None, skiprows=df_skip, nrows=df_len, dtype='float32')
 
 logger.info('loaded data from %s starting at %s with %s rows in %.3fs' % (args.dataset, df_skip + 1, df_len, time.time() - df_time))
 
