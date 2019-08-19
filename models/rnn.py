@@ -178,7 +178,7 @@ ctx = mx.cpu()
 
 net = gluon.nn.Sequential()
 with net.name_scope():
-	net.add(gluon.rnn.RNN(args.rnn_units, 1, layout='NTC'))
+	net.add(gluon.rnn.RNN(args.rnn_units, 1, layout='NTC', activation='tanh'))
 	net.add(gluon.nn.Dense(2))
 
 net.initialize(mx.init.Xavier(), ctx=ctx)
