@@ -200,7 +200,7 @@ if not kv is None:
 
 df_time = time.time()
 
-logger.info('reading %s of %s lines of data' % (df_len, args.chunksize))
+logger.info('reading %s of %s lines of data' % (df_len, lines))
 
 df = pd.read_csv(args.dataset, header=None, skiprows=df_skip, nrows=df_len)
 
