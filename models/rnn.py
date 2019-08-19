@@ -201,7 +201,7 @@ if not kv is None:
 
 df_time = time.time()
 
-logger.info('reading dataset with chunksize %s' % (args.chunksize))
+logger.info('reading %s lines of data with a chunksize of %s' % (lines, args.chunksize))
 
 tfr = pd.read_csv(args.dataset, header=None, chunksize=args.chunksize, iterator=True, skiprows=df_skip, nrows=df_len)
 df = pd.concat(tfr)
