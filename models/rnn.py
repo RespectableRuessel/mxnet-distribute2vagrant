@@ -15,9 +15,9 @@ parser = argparse.ArgumentParser(description='Train a distributed rnn model.')
 
 parser.add_argument('-d', '--dataset', required=True, type=str)
 parser.add_argument('-e', '--epochs', type=int, default=10)
-parser.add_argument('-b', '--batch-size', type=int, default=32)
-parser.add_argument('-s', '--sequence-length', type=int, default=12)
-parser.add_argument('-l', '--learning-rate', type=float, default=0.1)
+parser.add_argument('-b', '--batch-size', type=int, default=1)
+parser.add_argument('-s', '--sequence-length', type=int, default=8)
+parser.add_argument('-l', '--learning-rate', type=float, default=0.001)
 parser.add_argument('-m', '--momentum', type=float, default=0.9)
 parser.add_argument('-u', '--rnn-units', type=int, default=5)
 parser.add_argument('-t', '--test-split', type=float, default=0.3)
@@ -31,7 +31,7 @@ name = os.path.basename(sys.argv[0]).replace('.py', '')
 dir = os.path.dirname(args.dataset)
 
 # --- logging
-log_interval = 24
+log_interval = 1024 / args.batch_size
 logging.basicConfig(level=logging.INFO)
 fh = logging.FileHandler('%s.log' % (name))
 logger = logging.getLogger()
@@ -99,7 +99,7 @@ def test(ctx, test_data, metrics):
 	return metrics.get()
 
 # --- train
-def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning_rate, momentum, kv=None, track_stats=False):
+def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning_rate, momentum, kv=None, master_worker=False, track_stats=False):
 	trainer = gluon.Trainer(net.collect_params(), 'sgd',
 		optimizer_params={
 			'learning_rate': learning_rate,
@@ -116,6 +116,7 @@ def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning
 	start_time = time.time()
 	num_epochs = 0
 	best_acc = 0
+	track_stats = track_stats and master_worker
 
 	for epoch in range(epochs):
 		metrics.reset()
@@ -162,14 +163,15 @@ def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning
 		logger.info('epoch %d\t\tvalidation: %s=%f, %s=%f' %
 			(epoch, metric[0], val[0], metric[1], val[1]))
 
-		if val[0] > best_acc:
+		if master_worker and val[0] > best_acc:
 			best_acc = val[0]
 			save_checkpoint(net, epoch, best_acc)
 
-	if num_epochs > 1:
-		logger.info('average epoch time: %fs' % (total_time / float(num_epochs - 1)))
+	if master_worker:
+		if num_epochs > 1:
+			logger.info('average epoch time: %fs' % (total_time / float(num_epochs - 1)))
 
-	logger.info('training completed in %.3fs with a update time of %.3fs' % (time.time() - start_time, total_time))
+		logger.info('training completed in %.3fs with a update time of %.3fs' % (time.time() - start_time, total_time))
 
 # --- model
 logger.info('starting new classification task:, %s', args)
@@ -234,4 +236,4 @@ logger.info('datasets: train=%d samples, validation=%d samples' % (len(train_dat
 # --- run
 metrics, acc, f1, perp = get_metrics()
 train(ctx, net, train_dataloader, test_dataloader, metrics,
-	args.epochs, args.batch_size, args.learning_rate, args.momentum, kv, args.statistics and (kv is None or kv.rank == 0))
+	args.epochs, args.batch_size, args.learning_rate, args.momentum, kv,  kv is None or kv.rank == 0, args.statistics)
