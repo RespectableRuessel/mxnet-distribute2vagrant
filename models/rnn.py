@@ -14,6 +14,7 @@ from mxnet.gluon.data import DataLoader, ArrayDataset
 parser = argparse.ArgumentParser(description='Train a distributed rnn model.')
 
 parser.add_argument('-d', '--dataset', required=True, type=str)
+parser.add_argument('-c', '--chunksize', type=int, default=10000)
 parser.add_argument('-e', '--epochs', type=int, default=10)
 parser.add_argument('-b', '--batch-size', type=int, default=32)
 parser.add_argument('-s', '--sequence-length', type=int, default=12)
@@ -200,7 +201,12 @@ if not kv is None:
 
 df_time = time.time()
 
-df = pd.read_csv(args.dataset, header=None, skiprows=df_skip, nrows=df_len)
+logger.info('reading dataset with chunksize %s' % (args.chunksize))
+
+tfr = pd.read_csv(args.dataset, header=None, chunksize=args.chunksize, iterator=True, skiprows=df_skip, nrows=df_len)
+df = pd.concat(tfr)
+#df = pd.read_csv(args.dataset, header=None, skiprows=df_skip, nrows=df_len)
+
 logger.info('loaded data from %s starting at %s with %s rows in %.3fs' % (args.dataset, df_skip + 1, df_len, time.time() - df_time))
 
 # --- data preperation
@@ -231,4 +237,4 @@ logger.info('datasets: train=%d samples, validation=%d samples' % (len(train_dat
 # --- run
 metrics, acc, f1, perp = get_metrics()
 train(ctx, net, train_dataloader, test_dataloader, metrics,
-	args.epochs, args.batch_size, args.learning_rate, args.momentum, kv, args.statistics and kv.rank == 0)
+	args.epochs, args.batch_size, args.learning_rate, args.momentum, kv, args.statistics and (kv is None or kv.rank == 0))
