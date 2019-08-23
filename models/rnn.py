@@ -31,7 +31,7 @@ name = os.path.basename(sys.argv[0]).replace('.py', '')
 dir = os.path.dirname(args.dataset)
 
 # --- logging
-log_interval = 1024 / args.batch_size
+log_interval = 2048 / args.batch_size # cause batch_size of 32 results in 64
 logging.basicConfig(level=logging.INFO)
 fh = logging.FileHandler('%s.log' % (name))
 logger = logging.getLogger()
@@ -63,7 +63,7 @@ def get_metrics():
 def save_checkpoint(net, epoch, accuracy):
 	fname = os.path.join(dir, '%s_acc_%.4f.params' % (name, accuracy))
 	net.save_parameters(fname)
-	logger.info('epoch %d\t\tsaving checkpoint with accuracy %.4f' % (epoch, accuracy))
+	logger.info('saving epoch %d checkpoint with accuracy %.4f' % (epoch, accuracy))
 
 # --- measurements
 def track_statistics(statistics, epoch, batch, loss, metrics):
@@ -84,6 +84,13 @@ def save_statistics(statistics):
 
 	statistics.clear()
 
+# --- log helper
+def worker_to_str(kv = None):
+	if kv is None or kv.rank == 0:
+		return 'worker 0 (master):'
+
+	return 'worker %s:' % (kv.rank)
+
 # --- test
 def test(ctx, test_data, metrics):
 	metrics.reset()
@@ -100,6 +107,8 @@ def test(ctx, test_data, metrics):
 
 # --- train
 def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning_rate, momentum, kv=None, master_worker=False, track_stats=False):
+
+	# setup MXNet trainer
 	trainer = gluon.Trainer(net.collect_params(), 'sgd',
 		optimizer_params={
 			'learning_rate': learning_rate,
@@ -111,6 +120,7 @@ def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning
 
 	loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
+	# measurement variables
 	statistics = []
 	total_time = 0
 	start_time = time.time()
@@ -123,6 +133,7 @@ def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning
 		tic = time.time()
 		btic = time.time()
 
+		# training loop
 		for i, (x, y) in enumerate(train_data):
 			with mx.autograd.record():
 				x = x.as_in_context(ctx)
@@ -132,13 +143,16 @@ def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning
 				L = loss(output, y)
 				L.backward()
 
+			# apply backpropergation to model
 			trainer.step(x.shape[0])
 			metrics.update(y, output)
 
 			if log_interval and not (i+1)%log_interval:
 				metric, val = metrics.get()
-				logger.info('epoch %d batch %d\tspeed=%8.f samples/sec\t%s=%f, %s=%f' %
-					(epoch, i, batch_size/(time.time() + 0.000001 - btic), metric[0], val[0], metric[1], val[1]))
+				speed = batch_size/(time.time() + 0.000001 - btic)
+
+				logger.info('%s epoch %d batch %d\tspeed=%8.f samples/sec\t%s=%f, %s=%f' %
+					(worker_to_str(kv), epoch, i, speed, metric[0], val[0], metric[1], val[1]))
 
 			if track_stats and i > 0:
 				track_statistics(statistics, epoch, i, L, metrics)
@@ -155,13 +169,13 @@ def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning
 			save_statistics(statistics)
 
 		metric, val = metrics.get()
-		logger.info('epoch %d\t\ttraining: %s=%f, %s=%f, %s=%f' %
-			(epoch, metric[0], val[0], metric[1], val[1], metric[2], val[2]))
-		logger.info('epoch %d\t\ttime cost: %fs' % (epoch, toc))
+		logger.info('%s epoch %d\t\ttraining: %s=%f, %s=%f, %s=%f' %
+			(worker_to_str(kv), epoch, metric[0], val[0], metric[1], val[1], metric[2], val[2]))
+		logger.info('%s epoch %d\t\ttime cost: %fs' % (worker_to_str(kv), epoch, toc))
 
 		metric, val = test(ctx, test_data, metrics)
-		logger.info('epoch %d\t\tvalidation: %s=%f, %s=%f' %
-			(epoch, metric[0], val[0], metric[1], val[1]))
+		logger.info('%s epoch %d\t\tvalidation: %s=%f, %s=%f' %
+			(worker_to_str(kv), epoch, metric[0], val[0], metric[1], val[1]))
 
 		if master_worker and val[0] > best_acc:
 			best_acc = val[0]
@@ -171,7 +185,7 @@ def train(ctx, net, train_data, test_data, metrics, epochs, batch_size, learning
 		if num_epochs > 1:
 			logger.info('average epoch time: %fs' % (total_time / float(num_epochs - 1)))
 
-		logger.info('training completed in %.3fs with a update time of %.3fs' % (time.time() - start_time, total_time))
+		logger.info('training completed in %.3fs' % (time.time() - start_time))
 
 # --- model
 logger.info('starting new classification task:, %s', args)
